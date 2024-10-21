@@ -1,0 +1,13 @@
+sdk:
+  account_id: "0a1b4118dd954ec3bcc69da5138bdb96"
+  dataSources_id: "ab555003531e0fd1"
+  log_level: debug #debug/info/warn/error
+http:
+  server_host: https://napi.growingio.com/
+  timeout: 10
+batch:
+  enable: true
+  max_size: 100
+  flush_after: 5
+  routine_count: 4
+  # max_cache_size: 10240
