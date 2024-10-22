@@ -61,6 +61,7 @@ func InitAnalytics(config *Config) error {
 
 	core.InitializedSuccessfully = true
 	logger.Info("Thank you very much for using GrowingIO. We will do our best to provide you with the best service.", "sdkVersion", core.SdkVersion)
+	logger.Debug(config.String())
 	return nil
 }
 

@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/growingio/growingio-sdk-go/internal/logger"
 	"github.com/growingio/growingio-sdk-go/internal/protobuf"
 )
 
@@ -45,6 +46,8 @@ func (b EventBuilder) BuildCustomEvent() {
 	} else {
 		sendEvent(event)
 	}
+
+	logger.Debug("BuildCustomEvent", "event", event.String())
 }
 
 func (b EventBuilder) BuildUserLoginEvent() {
@@ -71,6 +74,8 @@ func (b EventBuilder) BuildUserLoginEvent() {
 	} else {
 		sendEvent(event)
 	}
+
+	logger.Debug("BuildUserLoginEvent", "event", event.String())
 }
 
 func (b EventBuilder) BuildItemEvent() {
@@ -88,6 +93,8 @@ func (b EventBuilder) BuildItemEvent() {
 	} else {
 		sendItem(event)
 	}
+
+	logger.Debug("BuildItemEvent", "event", event.String())
 }
 
 func (e *EventBuilder) getEventTime() int64 {

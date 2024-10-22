@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
@@ -47,17 +46,11 @@ func initAnalytics() {
 			FlushAfter: 5,
 		},
 	}
-	err := sdk.InitAnalytics(config)
-	if err != nil {
-		fmt.Printf("InitAnalytics failed, error: %v", err)
-	}
+	sdk.InitAnalytics(config)
 }
 
 func initAnalyticsByConfigFile() {
-	err := sdk.InitAnalyticsByConfigFile("example/yml/config.yml")
-	if err != nil {
-		fmt.Printf("InitAnalytics failed, error: %v", err)
-	}
+	sdk.InitAnalyticsByConfigFile("example/yml/config.yml")
 }
 
 func trackCustomEvent() {

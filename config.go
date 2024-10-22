@@ -1,11 +1,22 @@
 package growingio
 
-import "errors"
+import (
+	"encoding/json"
+	"errors"
+)
 
 type Config struct {
 	SdkConfig   SdkConfig   `yaml:"sdk"`
 	HttpConfig  HttpConfig  `yaml:"http"`
 	BatchConfig BatchConfig `yaml:"batch"`
+}
+
+func (c *Config) String() string {
+	jsonString, err := json.Marshal(c)
+	if err != nil {
+		return ""
+	}
+	return string(jsonString)
 }
 
 type LogLevel int
