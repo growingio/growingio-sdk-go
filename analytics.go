@@ -48,7 +48,9 @@ func InitAnalytics(config *Config) error {
 		Collect: serverHost + "/v3/projects/" + config.SdkConfig.AccountId + "/collect",
 		Item:    serverHost + "/projects/" + config.SdkConfig.AccountId + "/collect/item",
 	}
-	core.RequestTimeout = int(config.HttpConfig.RequestTimeout)
+	if config.HttpConfig.RequestTimeout > 0 {
+		core.RequestTimeout = config.HttpConfig.RequestTimeout
+	}
 
 	if config.BatchConfig.Enable {
 		core.BatchEnable = config.BatchConfig.Enable

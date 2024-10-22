@@ -27,7 +27,7 @@ type RequestUrl struct {
 }
 
 var Urls RequestUrl
-var RequestTimeout int
+var RequestTimeout int = 5
 
 func sendItem(item *protobuf.ItemDto) {
 	items := &protobuf.ItemDtoList{

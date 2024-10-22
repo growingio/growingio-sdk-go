@@ -58,7 +58,7 @@ type SdkConfig struct {
 
 type HttpConfig struct {
 	ServerHost     string `yaml:"server_host"`
-	RequestTimeout int64  `yaml:"timeout"`
+	RequestTimeout int    `yaml:"timeout"`
 }
 
 type BatchConfig struct {
