@@ -21,11 +21,13 @@ func main() {
 
 	// 用户登录属性事件
 	trackUser()
+	trackUserByChaining()
 
 	// 维度表
 	submitItem()
+	submitItemByChaining()
 
-	// examplet调试时，运行完会直接退出，增加延时，等待sdk中的异步实现（发送埋点数据）执行完成
+	// example调试时，运行完会直接退出，增加延时，等待sdk中的异步实现（发送埋点数据）执行完成
 	waitGoroutineInSdk()
 }
 
@@ -89,16 +91,33 @@ func trackCustomEventByChaining() {
 }
 
 func trackUser() {
+	builder := sdk.NewUser("mike")
+	builder.EventTime = time.Now().UnixMilli()
+	builder.Attributes = map[string]interface{}{
+		"key1": "value1",
+	}
+	sdk.TrackUser(builder)
+}
+
+func trackUserByChaining() {
 	sdk.TrackUser(
 		sdk.NewUser("jack").WithEventTime(time.Now().UnixMilli()).WithAttributes(map[string]interface{}{
-			"key": "value",
+			"key2": "value2",
 		}))
 }
 
 func submitItem() {
+	builder := sdk.NewItem("num99", "banana")
+	builder.Attributes = map[string]interface{}{
+		"key1": "value1",
+	}
+	sdk.SubmitItem(builder)
+}
+
+func submitItemByChaining() {
 	sdk.SubmitItem(
 		sdk.NewItem("num100", "apple").WithAttributes(map[string]interface{}{
-			"key": "value",
+			"key2": "value2",
 		}))
 }
 
