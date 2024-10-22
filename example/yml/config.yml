@@ -1,6 +1,6 @@
 sdk:
   account_id: "0a1b4118dd954ec3bcc69da5138bdb96"
-  dataSources_id: "ab555003531e0fd1"
+  data_source_id: "ab555003531e0fd1"
   log_level: debug #debug/info/warn/error
 http:
   server_host: https://napi.growingio.com/

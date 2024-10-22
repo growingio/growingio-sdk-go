@@ -32,9 +32,9 @@ func main() {
 func initAnalytics() {
 	config := &sdk.Config{
 		SdkConfig: sdk.SdkConfig{
-			AccountId:     "0a1b4118dd954ec3bcc69da5138bdb96",
-			DataSourcesId: "ab555003531e0fd1",
-			LogLevel:      sdk.DebugLogLevel,
+			AccountId:    "0a1b4118dd954ec3bcc69da5138bdb96",
+			DataSourceId: "ab555003531e0fd1",
+			LogLevel:     sdk.DebugLogLevel,
 		},
 		HttpConfig: sdk.HttpConfig{
 			ServerHost:     "https://napi.growingio.com/",

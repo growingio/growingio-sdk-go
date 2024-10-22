@@ -51,9 +51,9 @@ func (l *LogLevel) UnmarshalYAML(unmarshal func(interface{}) error) error {
 }
 
 type SdkConfig struct {
-	AccountId     string   `yaml:"account_id"`
-	DataSourcesId string   `yaml:"dataSources_id"`
-	LogLevel      LogLevel `yaml:"log_level"`
+	AccountId    string   `yaml:"account_id"`
+	DataSourceId string   `yaml:"data_source_id"`
+	LogLevel     LogLevel `yaml:"log_level"`
 }
 
 type HttpConfig struct {

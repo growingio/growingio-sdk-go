@@ -24,7 +24,7 @@ type EventBuilder struct {
 func (b EventBuilder) BuildCustomEvent() {
 	event := &protobuf.EventV3Dto{
 		ProjectKey:   AccountId,
-		DataSourceId: DataSourcesId,
+		DataSourceId: DataSourceId,
 		SdkVersion:   SdkVersion,
 		Platform:     Platform,
 	}
@@ -53,7 +53,7 @@ func (b EventBuilder) BuildCustomEvent() {
 func (b EventBuilder) BuildUserLoginEvent() {
 	event := &protobuf.EventV3Dto{
 		ProjectKey:   AccountId,
-		DataSourceId: DataSourcesId,
+		DataSourceId: DataSourceId,
 		SdkVersion:   SdkVersion,
 		Platform:     Platform,
 	}
@@ -81,7 +81,7 @@ func (b EventBuilder) BuildUserLoginEvent() {
 func (b EventBuilder) BuildItemEvent() {
 	event := &protobuf.ItemDto{
 		ProjectKey:   AccountId,
-		DataSourceId: DataSourcesId,
+		DataSourceId: DataSourceId,
 	}
 
 	event.Id = b.getItemId()

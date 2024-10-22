@@ -29,13 +29,13 @@ func InitAnalytics(config *Config) error {
 		logger.Error(err, "Please enter your AccountId")
 		return err
 	}
-	if config.SdkConfig.DataSourcesId == "" {
-		err := errors.New("initialization failed, DataSourcesId is empty")
-		logger.Error(err, "Please enter your DataSourcesId")
+	if config.SdkConfig.DataSourceId == "" {
+		err := errors.New("initialization failed, DataSourceId is empty")
+		logger.Error(err, "Please enter your DataSourceId")
 		return err
 	}
 	core.AccountId = config.SdkConfig.AccountId
-	core.DataSourcesId = config.SdkConfig.DataSourcesId
+	core.DataSourceId = config.SdkConfig.DataSourceId
 
 	if config.HttpConfig.ServerHost == "" {
 		err := errors.New("initialization failed, ServerHost is empty")
