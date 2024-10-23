@@ -141,6 +141,7 @@ func makeRequest(m protoreflect.ProtoMessage, baseURL string) {
 	pm := getPipeManager()
 	if err := pm.execute(req); err != nil {
 		logger.Error(err, "make request failed")
+		return
 	}
 
 	if err := sendRequest(req); err != nil {
