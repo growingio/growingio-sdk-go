@@ -21,7 +21,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-logr/stdr"
 	"github.com/growingio/growingio-sdk-go/internal/logger"
 	"github.com/growingio/growingio-sdk-go/internal/protobuf"
 )
@@ -61,7 +60,8 @@ func TestSendEvent(t *testing.T) {
 	MaxCacheSize = 10240
 
 	// 打开日志
-	stdr.SetVerbosity(8)
+	logger.NewLogger()
+	logger.SetLogLevel(8)
 	logger.Debug("begin TestSendEvent")
 
 	// 初始化batch

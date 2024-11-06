@@ -31,6 +31,8 @@ var lock = make(chan struct{}, 1)
 func InitAnalytics(config *Config) error {
 	lock <- struct{}{}
 	defer func() { <-lock }()
+	// create the logger before any calls are made
+	logger.NewLogger()
 
 	if core.InitializedSuccessfully {
 		err := errors.New("initialization failed, already initialized")
