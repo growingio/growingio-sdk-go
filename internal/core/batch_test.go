@@ -17,65 +17,81 @@
 package core
 
 import (
-	"sync"
 	"testing"
 	"time"
 
-	"github.com/growingio/growingio-sdk-go/internal/logger"
 	"github.com/growingio/growingio-sdk-go/internal/protobuf"
+	"github.com/stretchr/testify/assert"
 )
 
-func createEvent(seqId int32) *protobuf.EventV3Dto {
-	event := &protobuf.EventV3Dto{
-		ProjectKey:   "123456",
-		DataSourceId: "654321",
-		SdkVersion:   "1.0.0",
-		Platform:     "go",
-	}
+func TestInitBatch(t *testing.T) {
+	InitBatch()
 
-	event.EventType = protobuf.EventType_CUSTOM
-	event.EventName = "name_" + string(seqId)
-
-	timestamp := time.Now().UnixMilli()
-	event.Timestamp = timestamp
-	event.SendTime = timestamp
-
-	event.UserId = "user1"
-	return event
+	assert.NotNil(t, bInst, "Batch instance should be initialized")
+	assert.NotNil(t, routine, "Routine channel should be initialized")
 }
 
-func TestSendEvent(t *testing.T) {
-	// 手动修改以下几个参数，进行测试
-	// 是否batch发送
-	BatchEnable = false
-	// 单包大小
-	MaxSize = 500
-	// 设置goroutine数
-	RoutineCount = 3
-	// 设置超时间隔
-	FlushAfter = 3
-	// 模拟事件数量
-	eventCount := int32(MaxSize*2 + (MaxSize - 1))
-	// 内存中缓存的最大事件数量，一般不修改
-	MaxCacheSize = 10240
+func TestNewBatch(t *testing.T) {
+	b := NewBatch()
 
-	// 打开日志
-	logger.NewLogger()
-	logger.SetLogLevel(8)
-	logger.Debug("begin TestSendEvent")
+	assert.NotNil(t, b)
+	assert.NotNil(t, b.(*batch).events)
+	assert.NotNil(t, b.(*batch).items)
 
-	// 初始化batch
-	InitBatch()
-	// 模拟埋点事件
-	for i := int32(0); i < eventCount; i++ {
-		go batch.pushEvent(createEvent(i))
+	assert.Equal(t, cap(b.(*batch).events), MaxCacheSize)
+	assert.Equal(t, cap(b.(*batch).items), MaxCacheSize)
+}
+
+func TestRun(t *testing.T) {
+	routineCount := 4
+	routine = make(chan struct{}, routineCount)
+	mockBatch := NewMockBatch(t)
+
+	// Create a channel to record the current number of pop() callers
+	// The buffer size is set to routineCount*2 to avoid blocking
+	curCallChan := make(chan struct{}, routineCount*2)
+
+	mockBatch.EXPECT().pop().Run(func() {
+		// When pop() is called, send a struct{} to curCallChan
+		curCallChan <- struct{}{}
+		// Get the current number of pop() callers
+		curCount := len(curCallChan)
+		// Ensure that the current caller count does not exceed routineCount
+		assert.LessOrEqual(t, curCount, routineCount)
+		// Read from curCallChan to reduce the caller count after execution
+		<-curCallChan
+	}).After(10 * time.Microsecond) // Delay pop() execution by 10 microseconds to simulate processing time
+
+	// Start the run() method, which will invoke pop() in a loop
+	go run(mockBatch)
+
+	// Wait for 5 seconds to allow run() enough time to make multiple pop() calls
+	time.Sleep(5000 * time.Millisecond)
+	mockBatch.AssertExpectations(t)
+}
+
+func TestPushEvent(t *testing.T) {
+	b := NewBatch()
+	event := &protobuf.EventV3Dto{}
+	b.pushEvent(event)
+
+	select {
+	case e := <-b.(*batch).events:
+		assert.Equal(t, event, e, "Pushed event should be the same as the popped one")
+	default:
+		t.Error("Event was not pushed to the events channel")
 	}
+}
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		time.Sleep(5 * time.Second)
-	}()
-	wg.Wait()
+func TestPushItem(t *testing.T) {
+	b := NewBatch()
+	item := &protobuf.ItemDto{}
+	b.pushItem(item)
+
+	select {
+	case i := <-b.(*batch).items:
+		assert.Equal(t, item, i, "Pushed item should be the same as the popped one")
+	default:
+		t.Error("Item was not pushed to the items channel")
+	}
 }

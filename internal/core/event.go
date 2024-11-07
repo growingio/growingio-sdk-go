@@ -37,7 +37,7 @@ type EventBuilder struct {
 	Attributes   map[string]interface{}
 }
 
-func (b EventBuilder) BuildCustomEvent() {
+func BuildCustomEvent(builder *EventBuilder) {
 	event := &protobuf.EventV3Dto{
 		ProjectKey:   AccountId,
 		DataSourceId: DataSourceId,
@@ -46,27 +46,23 @@ func (b EventBuilder) BuildCustomEvent() {
 	}
 
 	event.EventType = protobuf.EventType_CUSTOM
-	event.EventName = b.EventName
+	event.EventName = builder.EventName
 
-	timestamp := b.getEventTime()
+	timestamp := builder.getEventTime()
 	event.Timestamp = timestamp
 	event.SendTime = timestamp
 
-	event.DeviceId = b.getAnonymousId()
-	event.UserId = b.getLoginUserId()
-	event.UserKey = b.getLoginUserKey()
-	event.Attributes = b.getAttributes()
+	event.DeviceId = builder.getAnonymousId()
+	event.UserId = builder.getLoginUserId()
+	event.UserKey = builder.getLoginUserKey()
+	event.Attributes = builder.getAttributes()
 
-	if BatchEnable {
-		batch.pushEvent(event)
-	} else {
-		sendEvent(event)
-	}
+	sendOrStoreEvent(event)
 
 	logger.Debug("BuildCustomEvent", "event", event.String())
 }
 
-func (b EventBuilder) BuildUserLoginEvent() {
+func BuildUserLoginEvent(builder *EventBuilder) {
 	event := &protobuf.EventV3Dto{
 		ProjectKey:   AccountId,
 		DataSourceId: DataSourceId,
@@ -76,41 +72,49 @@ func (b EventBuilder) BuildUserLoginEvent() {
 
 	event.EventType = protobuf.EventType_LOGIN_USER_ATTRIBUTES
 
-	timestamp := b.getEventTime()
+	timestamp := builder.getEventTime()
 	event.Timestamp = timestamp
 	event.SendTime = timestamp
 
-	event.DeviceId = b.getAnonymousId()
-	event.UserId = b.getLoginUserId()
-	event.UserKey = b.getLoginUserKey()
-	event.Attributes = b.getAttributes()
+	event.DeviceId = builder.getAnonymousId()
+	event.UserId = builder.getLoginUserId()
+	event.UserKey = builder.getLoginUserKey()
+	event.Attributes = builder.getAttributes()
 
-	if BatchEnable {
-		batch.pushEvent(event)
-	} else {
-		sendEvent(event)
-	}
+	sendOrStoreEvent(event)
 
 	logger.Debug("BuildUserLoginEvent", "event", event.String())
 }
 
-func (b EventBuilder) BuildItemEvent() {
+func BuildItemEvent(builder *EventBuilder) {
 	event := &protobuf.ItemDto{
 		ProjectKey:   AccountId,
 		DataSourceId: DataSourceId,
 	}
 
-	event.Id = b.getItemId()
-	event.Key = b.getItemKey()
-	event.Attributes = b.getAttributes()
+	event.Id = builder.getItemId()
+	event.Key = builder.getItemKey()
+	event.Attributes = builder.getAttributes()
 
+	sendOrStoreItem(event)
+
+	logger.Debug("BuildItemEvent", "event", event.String())
+}
+
+func sendOrStoreEvent(event *protobuf.EventV3Dto) {
 	if BatchEnable {
-		batch.pushItem(event)
+		bInst.pushEvent(event)
+	} else {
+		sendEvent(event)
+	}
+}
+
+func sendOrStoreItem(event *protobuf.ItemDto) {
+	if BatchEnable {
+		bInst.pushItem(event)
 	} else {
 		sendItem(event)
 	}
-
-	logger.Debug("BuildItemEvent", "event", event.String())
 }
 
 func (e *EventBuilder) getEventTime() int64 {
