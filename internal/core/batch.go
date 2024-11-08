@@ -66,6 +66,9 @@ func InitBatch() {
 
 	routine = make(chan struct{}, RoutineCount)
 	bInst = NewBatch()
+}
+
+func RunBatch() {
 	go run(bInst)
 }
 

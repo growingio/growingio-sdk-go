@@ -38,6 +38,21 @@ type EventBuilder struct {
 }
 
 func BuildCustomEvent(builder *EventBuilder) {
+	event := buildCustomEvent(builder)
+	sendOrStoreEvent(bInst, event)
+}
+
+func BuildUserLoginEvent(builder *EventBuilder) {
+	event := buildUserLoginEvent(builder)
+	sendOrStoreEvent(bInst, event)
+}
+
+func BuildItemEvent(builder *EventBuilder) {
+	event := buildItemEvent(builder)
+	sendOrStoreItem(bInst, event)
+}
+
+func buildCustomEvent(builder *EventBuilder) *protobuf.EventV3Dto {
 	event := &protobuf.EventV3Dto{
 		ProjectKey:   AccountId,
 		DataSourceId: DataSourceId,
@@ -57,12 +72,11 @@ func BuildCustomEvent(builder *EventBuilder) {
 	event.UserKey = builder.getLoginUserKey()
 	event.Attributes = builder.getAttributes()
 
-	sendOrStoreEvent(event)
-
 	logger.Debug("BuildCustomEvent", "event", event.String())
+	return event
 }
 
-func BuildUserLoginEvent(builder *EventBuilder) {
+func buildUserLoginEvent(builder *EventBuilder) *protobuf.EventV3Dto {
 	event := &protobuf.EventV3Dto{
 		ProjectKey:   AccountId,
 		DataSourceId: DataSourceId,
@@ -81,12 +95,11 @@ func BuildUserLoginEvent(builder *EventBuilder) {
 	event.UserKey = builder.getLoginUserKey()
 	event.Attributes = builder.getAttributes()
 
-	sendOrStoreEvent(event)
-
 	logger.Debug("BuildUserLoginEvent", "event", event.String())
+	return event
 }
 
-func BuildItemEvent(builder *EventBuilder) {
+func buildItemEvent(builder *EventBuilder) *protobuf.ItemDto {
 	event := &protobuf.ItemDto{
 		ProjectKey:   AccountId,
 		DataSourceId: DataSourceId,
@@ -96,22 +109,21 @@ func BuildItemEvent(builder *EventBuilder) {
 	event.Key = builder.getItemKey()
 	event.Attributes = builder.getAttributes()
 
-	sendOrStoreItem(event)
-
 	logger.Debug("BuildItemEvent", "event", event.String())
+	return event
 }
 
-func sendOrStoreEvent(event *protobuf.EventV3Dto) {
+func sendOrStoreEvent(batch Batch, event *protobuf.EventV3Dto) {
 	if BatchEnable {
-		bInst.pushEvent(event)
+		batch.pushEvent(event)
 	} else {
 		sendEvent(event)
 	}
 }
 
-func sendOrStoreItem(event *protobuf.ItemDto) {
+func sendOrStoreItem(batch Batch, event *protobuf.ItemDto) {
 	if BatchEnable {
-		bInst.pushItem(event)
+		batch.pushItem(event)
 	} else {
 		sendItem(event)
 	}

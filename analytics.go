@@ -77,6 +77,7 @@ func InitAnalytics(config *Config) error {
 		core.RoutineCount = config.BatchConfig.RoutineCount
 		core.MaxCacheSize = config.BatchConfig.MaxCacheSize
 		core.InitBatch()
+		core.RunBatch()
 	}
 
 	core.InitializedSuccessfully = true

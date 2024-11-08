@@ -22,7 +22,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/golang/snappy"
 	"github.com/growingio/growingio-sdk-go/internal/protobuf"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -46,10 +45,10 @@ var Urls RequestUrl
 var RequestTimeout int = 5
 
 func sendItem(item *protobuf.ItemDto) {
-	items := &protobuf.ItemDtoList{
+	itemList := &protobuf.ItemDtoList{
 		Values: []*protobuf.ItemDto{item},
 	}
-	makeRequest(items, Urls.Item)
+	makeRequest(itemList, Urls.Item)
 }
 
 func sendItems(items []*protobuf.ItemDto) {
@@ -71,54 +70,6 @@ func sendEvents(events []*protobuf.EventV3Dto) {
 		Values: events,
 	}
 	makeRequest(eventList, Urls.Collect)
-}
-
-type Pipe func(*Request) error
-
-type PipeManager struct {
-	pipes []Pipe
-}
-
-var pipe *PipeManager
-
-func getPipeManager() *PipeManager {
-	if pipe == nil {
-		pipe = &PipeManager{}
-		pipe.addPipe(compress)
-		pipe.addPipe(encrypt)
-	}
-	return pipe
-}
-
-func (pm *PipeManager) addPipe(pipe Pipe) {
-	pm.pipes = append(pm.pipes, pipe)
-}
-
-func (pm *PipeManager) execute(req *Request) error {
-	for _, pipe := range pm.pipes {
-		if err := pipe(req); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func compress(req *Request) error {
-	compressed := snappy.Encode(nil, req.Body)
-	req.Body = compressed
-	req.Headers["X-Compress-Codec"] = "2"
-	return nil
-}
-
-func encrypt(req *Request) error {
-	hint := byte(req.Timestamp % 256)
-	encrypted := make([]byte, len(req.Body))
-	for i, b := range req.Body {
-		encrypted[i] = b ^ hint
-	}
-	req.Body = encrypted
-	req.Headers["X-Crypt-Codec"] = "1"
-	return nil
 }
 
 func makeRequest(m protoreflect.ProtoMessage, baseURL string) {

@@ -17,6 +17,7 @@
 package core
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -25,13 +26,95 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestBuildCustomEvent(t *testing.T) {
+	AccountId = "123456" + fmt.Sprintf("%d", time.Now().UnixMilli())
+	DataSourceId = "654321" + fmt.Sprintf("%d", time.Now().UnixMilli())
+	SdkVersion = "1.0.0"
+	Platform = "go"
+
+	builder := &EventBuilder{
+		EventName:    "name",
+		EventTime:    time.Now().UnixMilli(),
+		AnonymousId:  "BF3E1CE2-A96C-4A8A-A085-768E0C52F344",
+		LoginUserId:  "userId123",
+		LoginUserKey: "userKey123",
+		Attributes:   map[string]interface{}{"attribute1": "value1", "attribute2": "value2"},
+	}
+
+	event := buildCustomEvent(builder)
+
+	assert.Equal(t, event.ProjectKey, AccountId, "ProjectKey should be correctly set")
+	assert.Equal(t, event.DataSourceId, DataSourceId, "DataSourceId should be correctly set")
+	assert.Equal(t, event.SdkVersion, SdkVersion, "SdkVersion should be correctly set")
+	assert.Equal(t, event.Platform, Platform, "Platform should be correctly set")
+
+	assert.Equal(t, event.EventType, protobuf.EventType_CUSTOM, "EventType should be correctly set")
+	assert.Equal(t, event.EventName, builder.EventName, "EventName should be correctly set")
+	assert.Equal(t, event.Timestamp, builder.getEventTime(), "Timestamp should be correctly set")
+	assert.Equal(t, event.SendTime, builder.getEventTime(), "SendTime should be correctly set")
+	assert.Equal(t, event.DeviceId, builder.getAnonymousId(), "DeviceId should be correctly set")
+	assert.Equal(t, event.UserId, builder.getLoginUserId(), "UserId should be correctly set")
+	assert.Equal(t, event.UserKey, builder.getLoginUserKey(), "UserKey Key should be correctly set")
+	assert.Equal(t, event.Attributes, builder.getAttributes(), "Attributes should be correctly set")
+}
+
+func TestBuildUserLoginEvent(t *testing.T) {
+	AccountId = "123456" + fmt.Sprintf("%d", time.Now().UnixMilli())
+	DataSourceId = "654321" + fmt.Sprintf("%d", time.Now().UnixMilli())
+	SdkVersion = "1.0.0"
+	Platform = "go"
+
+	builder := &EventBuilder{
+		EventTime:    time.Now().UnixMilli(),
+		AnonymousId:  "BF3E1CE2-A96C-4A8A-A085-768E0C52F344",
+		LoginUserId:  "userId123",
+		LoginUserKey: "userKey123",
+		Attributes:   map[string]interface{}{"attribute1": "value1", "attribute2": "value2"},
+	}
+
+	event := buildUserLoginEvent(builder)
+
+	assert.Equal(t, event.ProjectKey, AccountId, "ProjectKey should be correctly set")
+	assert.Equal(t, event.DataSourceId, DataSourceId, "DataSourceId should be correctly set")
+	assert.Equal(t, event.SdkVersion, SdkVersion, "SdkVersion should be correctly set")
+	assert.Equal(t, event.Platform, Platform, "Platform should be correctly set")
+
+	assert.Equal(t, event.EventType, protobuf.EventType_LOGIN_USER_ATTRIBUTES, "EventType should be correctly set")
+	assert.Equal(t, event.Timestamp, builder.getEventTime(), "Timestamp should be correctly set")
+	assert.Equal(t, event.SendTime, builder.getEventTime(), "SendTime should be correctly set")
+	assert.Equal(t, event.DeviceId, builder.getAnonymousId(), "DeviceId should be correctly set")
+	assert.Equal(t, event.UserId, builder.getLoginUserId(), "UserId should be correctly set")
+	assert.Equal(t, event.UserKey, builder.getLoginUserKey(), "UserKey Key should be correctly set")
+	assert.Equal(t, event.Attributes, builder.getAttributes(), "Attributes should be correctly set")
+}
+
+func TestBuildItemEvent(t *testing.T) {
+	AccountId = "123456" + fmt.Sprintf("%d", time.Now().UnixMilli())
+	DataSourceId = "654321" + fmt.Sprintf("%d", time.Now().UnixMilli())
+
+	builder := &EventBuilder{
+		ItemId:     "itemId123",
+		ItemKey:    "itemKey123",
+		Attributes: map[string]interface{}{"attribute1": "value1", "attribute2": "value2"},
+	}
+
+	event := buildItemEvent(builder)
+
+	assert.Equal(t, event.ProjectKey, AccountId, "ProjectKey should be correctly set")
+	assert.Equal(t, event.DataSourceId, DataSourceId, "DataSourceId should be correctly set")
+
+	assert.Equal(t, event.Id, builder.getItemId(), "Item Id should be correctly set")
+	assert.Equal(t, event.Key, builder.getItemKey(), "Item Key should be correctly set")
+	assert.Equal(t, event.Attributes, builder.getAttributes(), "Attributes should be correctly set")
+}
+
 func TestSendOrStoreEvent(t *testing.T) {
 	event := &protobuf.EventV3Dto{}
 	mockBatch := NewMockBatch(t)
 
 	BatchEnable = true
 	mockBatch.EXPECT().pushEvent(event)
-	sendOrStoreEvent(event)
+	sendOrStoreEvent(mockBatch, event)
 	mockBatch.AssertExpectations(t)
 }
 
@@ -41,7 +124,7 @@ func TestSendOrStoreItem(t *testing.T) {
 
 	BatchEnable = true
 	mockBatch.EXPECT().pushItem(event)
-	sendOrStoreItem(event)
+	sendOrStoreItem(mockBatch, event)
 	mockBatch.AssertExpectations(t)
 }
 
