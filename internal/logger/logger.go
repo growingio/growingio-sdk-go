@@ -17,65 +17,40 @@
 package logger
 
 import (
-	"fmt"
 	stdlog "log"
 	"os"
-	"runtime"
-	"sync"
 
 	"github.com/go-logr/logr"
 	"github.com/go-logr/stdr"
 )
 
-func SetLogLevel(logLevel int) {
+type logger struct {
+	vendor logr.Logger
+}
+
+func newLogger() Logger {
+	vendor := stdr.New(stdlog.New(os.Stderr, "[GrowingAnalytics] ", stdlog.LstdFlags|stdlog.Lmsgprefix))
+	return &logger{
+		vendor: vendor,
+	}
+}
+
+func (l *logger) setLogLevel(logLevel int) {
 	stdr.SetVerbosity(logLevel)
 }
 
-func Debug(msg string, keysAndValues ...any) {
-	combined := append([]any{"goroutineId", getGoroutineID()}, keysAndValues...)
-	sharedInstance().V(debugLogLevel).Info(msg, combined...)
+func (l *logger) debug(msg string, keysAndValues ...any) {
+	l.vendor.V(debugLogLevel).Info(msg, keysAndValues...)
 }
 
-func Info(msg string, keysAndValues ...any) {
-	combined := append([]any{"goroutineId", getGoroutineID()}, keysAndValues...)
-	sharedInstance().V(infoLogLevel).Info(msg, combined...)
+func (l *logger) info(msg string, keysAndValues ...any) {
+	l.vendor.V(infoLogLevel).Info(msg, keysAndValues...)
 }
 
-func Warn(msg string, keysAndValues ...any) {
-	combined := append([]any{"goroutineId", getGoroutineID()}, keysAndValues...)
-	sharedInstance().V(warnLogLevel).Info(msg, combined...)
+func (l *logger) warn(msg string, keysAndValues ...any) {
+	l.vendor.V(warnLogLevel).Info(msg, keysAndValues...)
 }
 
-func Error(err error, msg string, keysAndValues ...any) {
-	combined := append([]any{"goroutineId", getGoroutineID()}, keysAndValues...)
-	sharedInstance().Error(err, msg, combined...)
-}
-
-func getGoroutineID() uint64 {
-	var buf [64]byte
-	runtime.Stack(buf[:], false)
-	var id uint64
-	fmt.Sscanf(string(buf[:]), "goroutine %d", &id)
-	return id
-}
-
-const (
-	debugLogLevel int = 8
-	infoLogLevel  int = 4
-	warnLogLevel  int = 1
-	errorLogLevel int = 0
-)
-
-var (
-	logger logr.Logger
-	once   sync.Once
-)
-
-func initLogger() {
-	logger = stdr.New(stdlog.New(os.Stderr, "[GrowingAnalytics] ", stdlog.LstdFlags|stdlog.Lmsgprefix))
-}
-
-func sharedInstance() logr.Logger {
-	once.Do(initLogger)
-	return logger
+func (l *logger) error_log(err error, msg string, keysAndValues ...any) {
+	l.vendor.Error(err, msg, keysAndValues...)
 }

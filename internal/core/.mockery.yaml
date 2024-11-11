@@ -1,0 +1,10 @@
+dir: .
+filename: "mock_{{.InterfaceName | snakecase}}_test.go"
+boilerplate-file: ../../hack/boilerplate/boilerplate.generatego.txt
+inpackage: true
+with-expecter: true
+packages:
+  github.com/growingio/growingio-sdk-go/internal/core:
+    interfaces:
+      Batch:
+      Request:

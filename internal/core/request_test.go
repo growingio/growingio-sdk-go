@@ -16,10 +16,18 @@
 
 package core
 
-var (
-	AccountId               string
-	DataSourceId            string
-	Platform                string = "go"
-	SdkVersion              string = "1.0.1"
-	InitializedSuccessfully bool
+import (
+	"testing"
 )
+
+func TestSendRequest(t *testing.T) {
+	mockRequest := NewMockRequest(t)
+
+	mockRequest.EXPECT().send().Return(nil).NotBefore(
+		mockRequest.EXPECT().prepare().Return(nil).Call,
+	)
+
+	sendRequest(mockRequest)
+
+	mockRequest.AssertExpectations(t)
+}

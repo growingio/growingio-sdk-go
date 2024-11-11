@@ -29,20 +29,25 @@ const defaultRoutineCount = 16
 const defaultMaxCacheSize = 10240
 
 var (
-	BatchEnable bool
-	MaxSize     int
-	FlushAfter  int
-
+	BatchEnable  bool
+	MaxSize      int
+	FlushAfter   int
 	RoutineCount int
 	MaxCacheSize int
 
-	batch *Batch
+	bInst   Batch
+	routine chan struct{}
 )
 
-type Batch struct {
-	routine chan struct{}
-	events  chan *protobuf.EventV3Dto
-	items   chan *protobuf.ItemDto
+type Batch interface {
+	pushEvent(event *protobuf.EventV3Dto)
+	pushItem(item *protobuf.ItemDto)
+	pop()
+}
+
+type batch struct {
+	events chan *protobuf.EventV3Dto
+	items  chan *protobuf.ItemDto
 }
 
 func InitBatch() {
@@ -59,48 +64,54 @@ func InitBatch() {
 		MaxCacheSize = defaultMaxCacheSize
 	}
 
-	batch = &Batch{
-		events:  make(chan *protobuf.EventV3Dto, MaxCacheSize),
-		items:   make(chan *protobuf.ItemDto, MaxCacheSize),
-		routine: make(chan struct{}, RoutineCount),
-	}
-
-	go send()
+	routine = make(chan struct{}, RoutineCount)
+	bInst = NewBatch()
 }
 
-func send() {
+func RunBatch() {
+	go run(bInst)
+}
+
+func NewBatch() Batch {
+	return &batch{
+		events: make(chan *protobuf.EventV3Dto, MaxCacheSize),
+		items:  make(chan *protobuf.ItemDto, MaxCacheSize),
+	}
+}
+
+func run(b Batch) {
 	for {
-		batch.routine <- struct{}{}
+		routine <- struct{}{}
 		go func() {
-			defer func() { <-batch.routine }()
-			batch.pop()
+			defer func() { <-routine }()
+			b.pop()
 		}()
 	}
 }
 
-func (batch *Batch) pushEvent(event *protobuf.EventV3Dto) {
-	batch.events <- event
+func (b *batch) pushEvent(event *protobuf.EventV3Dto) {
+	b.events <- event
 }
 
-func (batch *Batch) pushItem(item *protobuf.ItemDto) {
-	batch.items <- item
+func (b *batch) pushItem(item *protobuf.ItemDto) {
+	b.items <- item
 }
 
-func (batch *Batch) pop() {
+func (b *batch) pop() {
 	var events []*protobuf.EventV3Dto
 	var items []*protobuf.ItemDto
 
-L:
+Query:
 	for {
 		select {
-		case e := <-batch.events:
+		case e := <-b.events:
 			events = append(events, e)
 			if len(events) >= MaxSize {
 				logger.Debug("sending events due to exceeding limit", "count", len(events), "limit", MaxSize)
 				sendEvents(events)
 				events = make([]*protobuf.EventV3Dto, 0)
 			}
-		case i := <-batch.items:
+		case i := <-b.items:
 			items = append(items, i)
 			if len(items) >= MaxSize {
 				logger.Debug("sending items due to exceeding limit", "count", len(items), "limit", MaxSize)
@@ -108,7 +119,7 @@ L:
 				items = make([]*protobuf.ItemDto, 0)
 			}
 		case <-time.After(time.Duration(FlushAfter) * time.Second):
-			break L
+			break Query
 		}
 	}
 

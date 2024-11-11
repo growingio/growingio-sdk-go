@@ -31,6 +31,8 @@ var lock = make(chan struct{}, 1)
 func InitAnalytics(config *Config) error {
 	lock <- struct{}{}
 	defer func() { <-lock }()
+	// create the logger before any calls are made
+	logger.NewLogger()
 
 	if core.InitializedSuccessfully {
 		err := errors.New("initialization failed, already initialized")
@@ -75,6 +77,7 @@ func InitAnalytics(config *Config) error {
 		core.RoutineCount = config.BatchConfig.RoutineCount
 		core.MaxCacheSize = config.BatchConfig.MaxCacheSize
 		core.InitBatch()
+		core.RunBatch()
 	}
 
 	core.InitializedSuccessfully = true
@@ -98,85 +101,85 @@ func InitAnalyticsByConfigFile(file string) error {
 	return InitAnalytics(config)
 }
 
-func TrackCustomEvent(builder *CustomEventBuilder) error {
+func TrackCustomEvent(b *CustomEventBuilder) error {
 	if !core.InitializedSuccessfully {
 		err := errors.New("TrackCustomEvent failed, GrowingAnalytics has not been initialized")
 		logger.Error(err, "Please init GrowingAnalytics first")
 		return err
 	}
 
-	if len(builder.EventName) == 0 {
+	if len(b.EventName) == 0 {
 		err := errors.New("TrackCustomEvent failed, EventName is empty")
 		logger.Error(err, "Please enter eventName for customEvent")
 		return err
 	}
 
-	if len(builder.AnonymousId)+len(builder.LoginUserId) == 0 {
+	if len(b.AnonymousId)+len(b.LoginUserId) == 0 {
 		err := errors.New("TrackCustomEvent failed, AnonymousId and LoginUserId are empty")
 		logger.Error(err, "Both AnonymousId and LoginUserId are empty. Please enter at least one of them")
 		return err
 	}
 
-	b := core.EventBuilder{
-		EventName:    builder.EventName,
-		EventTime:    builder.EventTime,
-		AnonymousId:  builder.AnonymousId,
-		LoginUserId:  builder.LoginUserId,
-		LoginUserKey: builder.LoginUserKey,
-		Attributes:   builder.Attributes,
+	builder := &core.EventBuilder{
+		EventName:    b.EventName,
+		EventTime:    b.EventTime,
+		AnonymousId:  b.AnonymousId,
+		LoginUserId:  b.LoginUserId,
+		LoginUserKey: b.LoginUserKey,
+		Attributes:   b.Attributes,
 	}
-	b.BuildCustomEvent()
+	core.BuildCustomEvent(builder)
 	return nil
 }
 
-func TrackUser(builder *UserEventBuilder) error {
+func TrackUser(b *UserEventBuilder) error {
 	if !core.InitializedSuccessfully {
 		err := errors.New("TrackUser failed, GrowingAnalytics has not been initialized")
 		logger.Error(err, "Please init GrowingAnalytics first")
 		return err
 	}
 
-	if len(builder.LoginUserId) == 0 {
+	if len(b.LoginUserId) == 0 {
 		err := errors.New("TrackUser failed, LoginUserId is empty")
 		logger.Error(err, "Please enter loginUserId for user")
 		return err
 	}
 
-	b := core.EventBuilder{
-		EventTime:    builder.EventTime,
-		AnonymousId:  builder.AnonymousId,
-		LoginUserId:  builder.LoginUserId,
-		LoginUserKey: builder.LoginUserKey,
-		Attributes:   builder.Attributes,
+	builder := &core.EventBuilder{
+		EventTime:    b.EventTime,
+		AnonymousId:  b.AnonymousId,
+		LoginUserId:  b.LoginUserId,
+		LoginUserKey: b.LoginUserKey,
+		Attributes:   b.Attributes,
 	}
-	b.BuildUserLoginEvent()
+	core.BuildUserLoginEvent(builder)
 	return nil
 }
 
-func SubmitItem(builder *ItemBuilder) error {
+func SubmitItem(b *ItemBuilder) error {
 	if !core.InitializedSuccessfully {
 		err := errors.New("SubmitItem failed, GrowingAnalytics has not been initialized")
 		logger.Error(err, "Please init GrowingAnalytics first")
 		return err
 	}
 
-	if len(builder.ItemId) == 0 {
+	if len(b.ItemId) == 0 {
 		err := errors.New("SubmitItem failed, ItemId is empty")
 		logger.Error(err, "Please enter itemId for item")
 		return err
 	}
 
-	if len(builder.ItemKey) == 0 {
+	if len(b.ItemKey) == 0 {
 		err := errors.New("SubmitItem failed, ItemKey is empty")
 		logger.Error(err, "Please enter itemKey for item")
 		return err
 	}
 
-	b := core.EventBuilder{
-		ItemId:     builder.ItemId,
-		ItemKey:    builder.ItemKey,
-		Attributes: builder.Attributes,
+	builder := &core.EventBuilder{
+		ItemId:     b.ItemId,
+		ItemKey:    b.ItemKey,
+		Attributes: b.Attributes,
 	}
-	b.BuildItemEvent()
+	core.BuildItemEvent(builder)
 	return nil
 }

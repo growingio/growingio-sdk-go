@@ -22,7 +22,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/golang/snappy"
 	"github.com/growingio/growingio-sdk-go/internal/protobuf"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -30,7 +29,12 @@ import (
 	logger "github.com/growingio/growingio-sdk-go/internal/logger"
 )
 
-type Request struct {
+type Request interface {
+	prepare() error
+	send() error
+}
+
+type request struct {
 	URL       string
 	Headers   map[string]string
 	Body      []byte
@@ -42,86 +46,55 @@ type RequestUrl struct {
 	Item    string
 }
 
-var Urls RequestUrl
-var RequestTimeout int = 5
+var (
+	Urls           RequestUrl
+	RequestTimeout int = 5
+)
 
 func sendItem(item *protobuf.ItemDto) {
-	items := &protobuf.ItemDtoList{
+	itemList := &protobuf.ItemDtoList{
 		Values: []*protobuf.ItemDto{item},
 	}
-	makeRequest(items, Urls.Item)
+	req := NewRequest(itemList, Urls.Item)
+	sendRequest(req)
 }
 
 func sendItems(items []*protobuf.ItemDto) {
 	itemList := &protobuf.ItemDtoList{
 		Values: items,
 	}
-	makeRequest(itemList, Urls.Item)
+	req := NewRequest(itemList, Urls.Item)
+	sendRequest(req)
 }
 
 func sendEvent(event *protobuf.EventV3Dto) {
 	eventList := &protobuf.EventV3List{
 		Values: []*protobuf.EventV3Dto{event},
 	}
-	makeRequest(eventList, Urls.Collect)
+	req := NewRequest(eventList, Urls.Collect)
+	sendRequest(req)
 }
 
 func sendEvents(events []*protobuf.EventV3Dto) {
 	eventList := &protobuf.EventV3List{
 		Values: events,
 	}
-	makeRequest(eventList, Urls.Collect)
+	req := NewRequest(eventList, Urls.Collect)
+	sendRequest(req)
 }
 
-type Pipe func(*Request) error
-
-type PipeManager struct {
-	pipes []Pipe
-}
-
-var pipe *PipeManager
-
-func getPipeManager() *PipeManager {
-	if pipe == nil {
-		pipe = &PipeManager{}
-		pipe.addPipe(compress)
-		pipe.addPipe(encrypt)
+func sendRequest(req Request) {
+	if err := req.prepare(); err != nil {
+		logger.Error(err, "request prepare failed")
+		return
 	}
-	return pipe
-}
 
-func (pm *PipeManager) addPipe(pipe Pipe) {
-	pm.pipes = append(pm.pipes, pipe)
-}
-
-func (pm *PipeManager) execute(req *Request) error {
-	for _, pipe := range pm.pipes {
-		if err := pipe(req); err != nil {
-			return err
-		}
+	if err := req.send(); err != nil {
+		logger.Error(err, "request send failed")
 	}
-	return nil
 }
 
-func compress(req *Request) error {
-	compressed := snappy.Encode(nil, req.Body)
-	req.Body = compressed
-	req.Headers["X-Compress-Codec"] = "2"
-	return nil
-}
-
-func encrypt(req *Request) error {
-	hint := byte(req.Timestamp % 256)
-	encrypted := make([]byte, len(req.Body))
-	for i, b := range req.Body {
-		encrypted[i] = b ^ hint
-	}
-	req.Body = encrypted
-	req.Headers["X-Crypt-Codec"] = "1"
-	return nil
-}
-
-func makeRequest(m protoreflect.ProtoMessage, baseURL string) {
+func NewRequest(m protoreflect.ProtoMessage, baseURL string) Request {
 	timestamp := time.Now().UnixMilli()
 	timestampString := fmt.Sprintf("%d", timestamp)
 	url := baseURL + "?stm=" + timestampString
@@ -131,27 +104,22 @@ func makeRequest(m protoreflect.ProtoMessage, baseURL string) {
 	headers["X-Timestamp"] = timestampString
 	body, _ := proto.Marshal(m)
 
-	req := &Request{
+	return &request{
 		URL:       url,
 		Headers:   headers,
 		Body:      body,
 		Timestamp: timestamp,
 	}
-
-	pm := getPipeManager()
-	if err := pm.execute(req); err != nil {
-		logger.Error(err, "make request failed")
-		return
-	}
-
-	if err := sendRequest(req); err != nil {
-		logger.Error(err, "send request failed")
-	}
 }
 
-func sendRequest(req *Request) error {
+func (req *request) prepare() error {
+	pm := getPipeManager()
+	return pm.execute(req)
+}
+
+func (req *request) send() error {
 	httpReq, _ := http.NewRequest(http.MethodPost, req.URL, bytes.NewBuffer(req.Body))
-	logger.Debug("make request", "url", httpReq.URL)
+	logger.Debug("create a new request", "url", httpReq.URL)
 
 	for key, value := range req.Headers {
 		httpReq.Header.Set(key, value)
@@ -166,6 +134,6 @@ func sendRequest(req *Request) error {
 	}
 	defer resp.Body.Close()
 
-	logger.Debug("get response", "status", resp.Status)
+	logger.Debug("receive response", "status", resp.Status)
 	return nil
 }
