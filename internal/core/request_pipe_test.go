@@ -31,7 +31,7 @@ func TestPipeManager_Execute(t *testing.T) {
 	enables flexible and modular program construction. Go compiles quickly to machine code yet has 
 	the convenience of garbage collection and the power of run-time reflection. It's a fast, statically
 	 typed, compiled language that feels like a dynamically typed, interpreted language.`
-	req := &Request{
+	req := &request{
 		Body:      []byte(txt),
 		Headers:   make(map[string]string),
 		Timestamp: time.Now().UnixMilli(),

@@ -7,3 +7,4 @@ packages:
   github.com/growingio/growingio-sdk-go/internal/core:
     interfaces:
       Batch:
+      Request:

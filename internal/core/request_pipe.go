@@ -18,7 +18,7 @@ package core
 
 import "github.com/golang/snappy"
 
-type Pipe func(*Request) error
+type Pipe func(*request) error
 
 type PipeManager struct {
 	pipes []Pipe
@@ -39,7 +39,7 @@ func (pm *PipeManager) addPipe(pipe Pipe) {
 	pm.pipes = append(pm.pipes, pipe)
 }
 
-func (pm *PipeManager) execute(req *Request) error {
+func (pm *PipeManager) execute(req *request) error {
 	for _, pipe := range pm.pipes {
 		if err := pipe(req); err != nil {
 			return err
@@ -48,14 +48,14 @@ func (pm *PipeManager) execute(req *Request) error {
 	return nil
 }
 
-func compress(req *Request) error {
+func compress(req *request) error {
 	compressed := snappy.Encode(nil, req.Body)
 	req.Body = compressed
 	req.Headers["X-Compress-Codec"] = "2"
 	return nil
 }
 
-func encrypt(req *Request) error {
+func encrypt(req *request) error {
 	hint := byte(req.Timestamp % 256)
 	encrypted := make([]byte, len(req.Body))
 	for i, b := range req.Body {

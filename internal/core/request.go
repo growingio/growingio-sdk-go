@@ -29,7 +29,12 @@ import (
 	logger "github.com/growingio/growingio-sdk-go/internal/logger"
 )
 
-type Request struct {
+type Request interface {
+	prepare() error
+	send() error
+}
+
+type request struct {
 	URL       string
 	Headers   map[string]string
 	Body      []byte
@@ -41,38 +46,55 @@ type RequestUrl struct {
 	Item    string
 }
 
-var Urls RequestUrl
-var RequestTimeout int = 5
+var (
+	Urls           RequestUrl
+	RequestTimeout int = 5
+)
 
 func sendItem(item *protobuf.ItemDto) {
 	itemList := &protobuf.ItemDtoList{
 		Values: []*protobuf.ItemDto{item},
 	}
-	makeRequest(itemList, Urls.Item)
+	req := NewRequest(itemList, Urls.Item)
+	sendRequest(req)
 }
 
 func sendItems(items []*protobuf.ItemDto) {
 	itemList := &protobuf.ItemDtoList{
 		Values: items,
 	}
-	makeRequest(itemList, Urls.Item)
+	req := NewRequest(itemList, Urls.Item)
+	sendRequest(req)
 }
 
 func sendEvent(event *protobuf.EventV3Dto) {
 	eventList := &protobuf.EventV3List{
 		Values: []*protobuf.EventV3Dto{event},
 	}
-	makeRequest(eventList, Urls.Collect)
+	req := NewRequest(eventList, Urls.Collect)
+	sendRequest(req)
 }
 
 func sendEvents(events []*protobuf.EventV3Dto) {
 	eventList := &protobuf.EventV3List{
 		Values: events,
 	}
-	makeRequest(eventList, Urls.Collect)
+	req := NewRequest(eventList, Urls.Collect)
+	sendRequest(req)
 }
 
-func makeRequest(m protoreflect.ProtoMessage, baseURL string) {
+func sendRequest(req Request) {
+	if err := req.prepare(); err != nil {
+		logger.Error(err, "request prepare failed")
+		return
+	}
+
+	if err := req.send(); err != nil {
+		logger.Error(err, "request send failed")
+	}
+}
+
+func NewRequest(m protoreflect.ProtoMessage, baseURL string) Request {
 	timestamp := time.Now().UnixMilli()
 	timestampString := fmt.Sprintf("%d", timestamp)
 	url := baseURL + "?stm=" + timestampString
@@ -82,27 +104,22 @@ func makeRequest(m protoreflect.ProtoMessage, baseURL string) {
 	headers["X-Timestamp"] = timestampString
 	body, _ := proto.Marshal(m)
 
-	req := &Request{
+	return &request{
 		URL:       url,
 		Headers:   headers,
 		Body:      body,
 		Timestamp: timestamp,
 	}
-
-	pm := getPipeManager()
-	if err := pm.execute(req); err != nil {
-		logger.Error(err, "make request failed")
-		return
-	}
-
-	if err := sendRequest(req); err != nil {
-		logger.Error(err, "send request failed")
-	}
 }
 
-func sendRequest(req *Request) error {
+func (req *request) prepare() error {
+	pm := getPipeManager()
+	return pm.execute(req)
+}
+
+func (req *request) send() error {
 	httpReq, _ := http.NewRequest(http.MethodPost, req.URL, bytes.NewBuffer(req.Body))
-	logger.Debug("make request", "url", httpReq.URL)
+	logger.Debug("create a new request", "url", httpReq.URL)
 
 	for key, value := range req.Headers {
 		httpReq.Header.Set(key, value)
@@ -117,6 +134,6 @@ func sendRequest(req *Request) error {
 	}
 	defer resp.Body.Close()
 
-	logger.Debug("get response", "status", resp.Status)
+	logger.Debug("receive response", "status", resp.Status)
 	return nil
 }
