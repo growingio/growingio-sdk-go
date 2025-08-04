@@ -16,8 +16,7 @@
 
 package analytics
 
-type CustomEventBuilder struct {
-	EventName    string
+type CommonEventFields struct {
 	EventTime    int64
 	AnonymousId  string
 	LoginUserId  string
@@ -25,12 +24,33 @@ type CustomEventBuilder struct {
 	Attributes   map[string]interface{}
 }
 
+func (c *CommonEventFields) setEventTime(eventTime int64) {
+	c.EventTime = eventTime
+}
+
+func (c *CommonEventFields) setAnonymousId(anonymousId string) {
+	c.AnonymousId = anonymousId
+}
+
+func (c *CommonEventFields) setLoginUserId(loginUserId string) {
+	c.LoginUserId = loginUserId
+}
+
+func (c *CommonEventFields) setLoginUserKey(loginUserKey string) {
+	c.LoginUserKey = loginUserKey
+}
+
+func (c *CommonEventFields) setAttributes(attributes map[string]interface{}) {
+	c.Attributes = attributes
+}
+
+type CustomEventBuilder struct {
+	EventName string
+	CommonEventFields
+}
+
 type UserEventBuilder struct {
-	EventTime    int64
-	AnonymousId  string
-	LoginUserId  string
-	LoginUserKey string
-	Attributes   map[string]interface{}
+	CommonEventFields
 }
 
 type ItemBuilder struct {
@@ -59,47 +79,47 @@ func NewItem(itemId string, itemKey string) *ItemBuilder {
 }
 
 func (builder *CustomEventBuilder) WithEventTime(eventTime int64) *CustomEventBuilder {
-	builder.EventTime = eventTime
+	builder.setEventTime(eventTime)
 	return builder
 }
 
 func (builder *CustomEventBuilder) WithAnonymousId(anonymousId string) *CustomEventBuilder {
-	builder.AnonymousId = anonymousId
+	builder.setAnonymousId(anonymousId)
 	return builder
 }
 
 func (builder *CustomEventBuilder) WithLoginUserId(loginUserId string) *CustomEventBuilder {
-	builder.LoginUserId = loginUserId
+	builder.setLoginUserId(loginUserId)
 	return builder
 }
 
 func (builder *CustomEventBuilder) WithLoginUserKey(loginUserKey string) *CustomEventBuilder {
-	builder.LoginUserKey = loginUserKey
+	builder.setLoginUserKey(loginUserKey)
 	return builder
 }
 
 func (builder *CustomEventBuilder) WithAttributes(attributes map[string]interface{}) *CustomEventBuilder {
-	builder.Attributes = attributes
+	builder.setAttributes(attributes)
 	return builder
 }
 
 func (builder *UserEventBuilder) WithEventTime(eventTime int64) *UserEventBuilder {
-	builder.EventTime = eventTime
+	builder.setEventTime(eventTime)
 	return builder
 }
 
 func (builder *UserEventBuilder) WithAnonymousId(anonymousId string) *UserEventBuilder {
-	builder.AnonymousId = anonymousId
+	builder.setAnonymousId(anonymousId)
 	return builder
 }
 
 func (builder *UserEventBuilder) WithLoginUserKey(loginUserKey string) *UserEventBuilder {
-	builder.LoginUserKey = loginUserKey
+	builder.setLoginUserKey(loginUserKey)
 	return builder
 }
 
 func (builder *UserEventBuilder) WithAttributes(attributes map[string]interface{}) *UserEventBuilder {
-	builder.Attributes = attributes
+	builder.setAttributes(attributes)
 	return builder
 }
 
