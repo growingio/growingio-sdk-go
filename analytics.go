@@ -20,17 +20,18 @@ import (
 	"errors"
 	"os"
 	"strings"
+	"sync"
 
 	core "github.com/growingio/growingio-sdk-go/internal/core"
 	logger "github.com/growingio/growingio-sdk-go/internal/logger"
 	"gopkg.in/yaml.v3"
 )
 
-var lock = make(chan struct{}, 1)
+var initMutex sync.Mutex
 
 func InitAnalytics(config *Config) error {
-	lock <- struct{}{}
-	defer func() { <-lock }()
+	initMutex.Lock()
+	defer initMutex.Unlock()
 	// create the logger before any calls are made
 	logger.NewLogger()
 
