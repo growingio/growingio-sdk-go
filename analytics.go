@@ -18,16 +18,13 @@ package analytics
 
 import (
 	"errors"
-	"os"
-	"strings"
 	"sync"
 
-	core "github.com/growingio/growingio-sdk-go/internal/core"
 	logger "github.com/growingio/growingio-sdk-go/internal/logger"
-	"gopkg.in/yaml.v3"
 )
 
 var initMutex sync.Mutex
+var defaultClient *Client
 
 func validateConfig(config *Config) error {
 	if config == nil {
@@ -115,129 +112,64 @@ func validateItemBuilder(b *ItemBuilder) error {
 func InitAnalytics(config *Config) error {
 	initMutex.Lock()
 	defer initMutex.Unlock()
-	// create the logger before any calls are made
-	logger.NewLogger()
 
-	if core.InitializedSuccessfully {
+	if defaultClient != nil {
 		err := errors.New("initialization failed, already initialized")
 		logger.Error(err, "Do not initialize GrowingAnalytics repeatedly")
 		return err
 	}
 
-	logger.SetLogLevel(int(config.SdkConfig.LogLevel))
-
-	if err := validateConfig(config); err != nil {
-		logger.Error(err, "Config validation failed")
+	client, err := NewClient(config)
+	if err != nil {
 		return err
 	}
-	core.AccountId = config.SdkConfig.AccountId
-	core.DataSourceId = config.SdkConfig.DataSourceId
 
-	serverHost := strings.TrimSuffix(config.HttpConfig.ServerHost, "/")
-
-	core.Urls = core.RequestUrl{
-		Collect: serverHost + "/v3/projects/" + config.SdkConfig.AccountId + "/collect",
-		Item:    serverHost + "/projects/" + config.SdkConfig.AccountId + "/collect/item",
-	}
-	if config.HttpConfig.RequestTimeout > 0 {
-		core.RequestTimeout = config.HttpConfig.RequestTimeout
-	}
-
-	if config.BatchConfig.Enable {
-		core.BatchEnable = config.BatchConfig.Enable
-		core.MaxSize = config.BatchConfig.MaxSize
-		core.FlushAfter = config.BatchConfig.FlushAfter
-		core.RoutineCount = config.BatchConfig.RoutineCount
-		core.MaxCacheSize = config.BatchConfig.MaxCacheSize
-		core.InitBatch()
-		core.RunBatch()
-	}
-
-	core.InitializedSuccessfully = true
-	logger.Info("Thank you very much for using GrowingIO. We will do our best to provide you with the best service.", "sdkVersion", core.SdkVersion)
-	logger.Debug(config.String())
+	defaultClient = client
 	return nil
 }
 
 func InitAnalyticsByConfigFile(file string) error {
-	yamlFile, err := os.ReadFile(file)
-	if err != nil {
-		logger.Error(err, "Read File failed", "filePath", file)
+	initMutex.Lock()
+	defer initMutex.Unlock()
+
+	if defaultClient != nil {
+		err := errors.New("initialization failed, already initialized")
+		logger.Error(err, "Do not initialize GrowingAnalytics repeatedly")
 		return err
 	}
-	config := &Config{}
-	err = yaml.Unmarshal(yamlFile, config)
+
+	client, err := NewClientFromFile(file)
 	if err != nil {
-		logger.Error(err, "yaml unmarshal failed", "filePath", file)
 		return err
 	}
-	return InitAnalytics(config)
+
+	defaultClient = client
+	return nil
 }
 
 func TrackCustomEvent(b *CustomEventBuilder) error {
-	if !core.InitializedSuccessfully {
+	if defaultClient == nil {
 		err := errors.New("GrowingAnalytics has not been initialized")
 		logger.Error(err, "Please init GrowingAnalytics first")
 		return err
 	}
-
-	if err := validateCustomEventBuilder(b); err != nil {
-		logger.Error(err, "CustomEventBuilder validation failed")
-		return err
-	}
-
-	builder := &core.EventBuilder{
-		EventName:    b.EventName,
-		EventTime:    b.EventTime,
-		AnonymousId:  b.AnonymousId,
-		LoginUserId:  b.LoginUserId,
-		LoginUserKey: b.LoginUserKey,
-		Attributes:   b.Attributes,
-	}
-	core.BuildCustomEvent(builder)
-	return nil
+	return defaultClient.TrackCustomEvent(b)
 }
 
 func TrackUser(b *UserEventBuilder) error {
-	if !core.InitializedSuccessfully {
+	if defaultClient == nil {
 		err := errors.New("GrowingAnalytics has not been initialized")
 		logger.Error(err, "Please init GrowingAnalytics first")
 		return err
 	}
-
-	if err := validateUserEventBuilder(b); err != nil {
-		logger.Error(err, "UserEventBuilder validation failed")
-		return err
-	}
-
-	builder := &core.EventBuilder{
-		EventTime:    b.EventTime,
-		AnonymousId:  b.AnonymousId,
-		LoginUserId:  b.LoginUserId,
-		LoginUserKey: b.LoginUserKey,
-		Attributes:   b.Attributes,
-	}
-	core.BuildUserLoginEvent(builder)
-	return nil
+	return defaultClient.TrackUser(b)
 }
 
 func SubmitItem(b *ItemBuilder) error {
-	if !core.InitializedSuccessfully {
+	if defaultClient == nil {
 		err := errors.New("GrowingAnalytics has not been initialized")
 		logger.Error(err, "Please init GrowingAnalytics first")
 		return err
 	}
-
-	if err := validateItemBuilder(b); err != nil {
-		logger.Error(err, "ItemBuilder validation failed")
-		return err
-	}
-
-	builder := &core.EventBuilder{
-		ItemId:     b.ItemId,
-		ItemKey:    b.ItemKey,
-		Attributes: b.Attributes,
-	}
-	core.BuildItemEvent(builder)
-	return nil
+	return defaultClient.SubmitItem(b)
 }

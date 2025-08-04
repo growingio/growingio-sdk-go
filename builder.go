@@ -67,7 +67,9 @@ func NewCustomEvent(eventName string) *CustomEventBuilder {
 
 func NewUser(loginUserId string) *UserEventBuilder {
 	return &UserEventBuilder{
-		LoginUserId: loginUserId,
+		CommonEventFields: CommonEventFields{
+			LoginUserId: loginUserId,
+		},
 	}
 }
 
