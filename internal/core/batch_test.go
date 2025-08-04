@@ -35,7 +35,7 @@ func TestInitBatch(t *testing.T) {
 
 	assert.Equal(t, DefaultMaxSize, MaxSize, "MaxSize should be initialized to DefaultMaxSize")
 	assert.Equal(t, DefaultFlushAfter, FlushAfter, "FlushAfter should be initialized to DefaultFlushAfter")
-	assert.Equal(t, DefaultRoutineCount, RoutineCount, "RoutineCount should be initialized to DefaultRoutineCount")
+	assert.Equal(t, getDefaultRoutineCount(), RoutineCount, "RoutineCount should be initialized to getDefaultRoutineCount()")
 	assert.Equal(t, DefaultMaxCacheSize, MaxCacheSize, "MaxCacheSize should be initialized to DefaultMaxCacheSize")
 
 	assert.NotNil(t, bInst, "bInst should be initialized")
@@ -52,7 +52,7 @@ func TestInitBatch_NoDefault(t *testing.T) {
 
 	assert.NotEqual(t, DefaultMaxSize, MaxSize, "MaxSize should be initialized to DefaultMaxSize")
 	assert.NotEqual(t, DefaultFlushAfter, FlushAfter, "FlushAfter should be initialized to DefaultFlushAfter")
-	assert.NotEqual(t, DefaultRoutineCount, RoutineCount, "RoutineCount should be initialized to DefaultRoutineCount")
+	assert.NotEqual(t, getDefaultRoutineCount(), RoutineCount, "RoutineCount should be initialized to getDefaultRoutineCount()")
 	assert.NotEqual(t, DefaultMaxCacheSize, MaxCacheSize, "MaxCacheSize should be initialized to DefaultMaxCacheSize")
 
 	assert.NotNil(t, bInst, "bInst should be initialized")

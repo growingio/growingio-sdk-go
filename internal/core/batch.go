@@ -17,6 +17,7 @@
 package core
 
 import (
+	"runtime"
 	"time"
 
 	"github.com/growingio/growingio-sdk-go/internal/logger"
@@ -26,9 +27,24 @@ import (
 const (
 	DefaultMaxSize      = 500
 	DefaultFlushAfter   = 10
-	DefaultRoutineCount = 16
 	DefaultMaxCacheSize = 10240
 )
+
+// getDefaultRoutineCount returns an optimal routine count based on system resources
+func getDefaultRoutineCount() int {
+	// For I/O-intensive work (HTTP requests), use 2x CPU cores
+	count := runtime.NumCPU() * 2
+	
+	// Set reasonable bounds
+	if count < 4 {
+		count = 4   // Minimum for responsiveness
+	}
+	if count > 32 {
+		count = 32  // Maximum to avoid excessive overhead
+	}
+	
+	return count
+}
 
 var (
 	BatchEnable  bool
@@ -59,7 +75,7 @@ func InitBatch() {
 		FlushAfter = DefaultFlushAfter
 	}
 	if RoutineCount == 0 {
-		RoutineCount = DefaultRoutineCount
+		RoutineCount = getDefaultRoutineCount()
 	}
 	if MaxCacheSize == 0 {
 		MaxCacheSize = DefaultMaxCacheSize
