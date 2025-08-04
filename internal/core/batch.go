@@ -23,10 +23,12 @@ import (
 	"github.com/growingio/growingio-sdk-go/internal/protobuf"
 )
 
-const defaultMaxSize = 500
-const defaultFlushAfter = 10
-const defaultRoutineCount = 16
-const defaultMaxCacheSize = 10240
+const (
+	DefaultMaxSize      = 500
+	DefaultFlushAfter   = 10
+	DefaultRoutineCount = 16
+	DefaultMaxCacheSize = 10240
+)
 
 var (
 	BatchEnable  bool
@@ -52,16 +54,16 @@ type batch struct {
 
 func InitBatch() {
 	if MaxSize == 0 {
-		MaxSize = defaultMaxSize
+		MaxSize = DefaultMaxSize
 	}
 	if FlushAfter == 0 {
-		FlushAfter = defaultFlushAfter
+		FlushAfter = DefaultFlushAfter
 	}
 	if RoutineCount == 0 {
-		RoutineCount = defaultRoutineCount
+		RoutineCount = DefaultRoutineCount
 	}
 	if MaxCacheSize == 0 {
-		MaxCacheSize = defaultMaxCacheSize
+		MaxCacheSize = DefaultMaxCacheSize
 	}
 
 	routine = make(chan struct{}, RoutineCount)

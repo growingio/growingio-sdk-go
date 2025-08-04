@@ -29,6 +29,8 @@ import (
 	logger "github.com/growingio/growingio-sdk-go/internal/logger"
 )
 
+const DefaultRequestTimeoutSeconds = 5
+
 type Request interface {
 	prepare() error
 	send() error
@@ -48,7 +50,7 @@ type RequestUrl struct {
 
 var (
 	Urls           RequestUrl
-	RequestTimeout int = 5
+	RequestTimeout int = DefaultRequestTimeoutSeconds
 )
 
 func sendItem(item *protobuf.ItemDto) {

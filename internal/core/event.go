@@ -26,6 +26,8 @@ import (
 	"github.com/growingio/growingio-sdk-go/internal/protobuf"
 )
 
+const AttributeSeparator = "||"
+
 type EventBuilder struct {
 	EventName    string
 	EventTime    int64
@@ -177,34 +179,33 @@ func (e *EventBuilder) getAttributes() map[string]string {
 	}
 
 	result := make(map[string]string)
-	seperator := "||"
 	for key, value := range e.Attributes {
 		switch v := value.(type) {
 		case string:
 			result[key] = v
 		case []string:
-			result[key] = strings.Join(v, seperator)
+			result[key] = strings.Join(v, AttributeSeparator)
 		case []bool:
 			strArr := convertToStringArray(v)
-			result[key] = strings.Join(strArr, seperator)
+			result[key] = strings.Join(strArr, AttributeSeparator)
 		case []uint8:
 			strArr := convertToStringArray(v)
-			result[key] = strings.Join(strArr, seperator)
+			result[key] = strings.Join(strArr, AttributeSeparator)
 		case []int:
 			strArr := convertToStringArray(v)
-			result[key] = strings.Join(strArr, seperator)
+			result[key] = strings.Join(strArr, AttributeSeparator)
 		case []int32:
 			strArr := convertToStringArray(v)
-			result[key] = strings.Join(strArr, seperator)
+			result[key] = strings.Join(strArr, AttributeSeparator)
 		case []int64:
 			strArr := convertToStringArray(v)
-			result[key] = strings.Join(strArr, seperator)
+			result[key] = strings.Join(strArr, AttributeSeparator)
 		case []float64:
 			strArr := convertToStringArray(v)
-			result[key] = strings.Join(strArr, seperator)
+			result[key] = strings.Join(strArr, AttributeSeparator)
 		case []interface{}:
 			strArr := convertToStringArray(v)
-			result[key] = strings.Join(strArr, seperator)
+			result[key] = strings.Join(strArr, AttributeSeparator)
 		case map[string]string:
 			jsonData, err := json.Marshal(v)
 			if err != nil {
