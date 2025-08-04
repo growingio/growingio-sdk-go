@@ -206,8 +206,13 @@ func (e *EventBuilder) getAttributes() map[string]string {
 			strArr := convertToStringArray(v)
 			result[key] = strings.Join(strArr, seperator)
 		case map[string]string:
-			jsonData, _ := json.Marshal(v)
-			result[key] = string(jsonData)
+			jsonData, err := json.Marshal(v)
+			if err != nil {
+				logger.Error(err, "failed to marshal map to JSON", "key", key)
+				result[key] = fmt.Sprintf("%v", v)
+			} else {
+				result[key] = string(jsonData)
+			}
 		default:
 			result[key] = fmt.Sprintf("%v", v)
 		}

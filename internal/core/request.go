@@ -55,7 +55,11 @@ func sendItem(item *protobuf.ItemDto) {
 	itemList := &protobuf.ItemDtoList{
 		Values: []*protobuf.ItemDto{item},
 	}
-	req := NewRequest(itemList, Urls.Item)
+	req, err := NewRequest(itemList, Urls.Item)
+	if err != nil {
+		logger.Error(err, "failed to create item request")
+		return
+	}
 	sendRequest(req)
 }
 
@@ -63,7 +67,11 @@ func sendItems(items []*protobuf.ItemDto) {
 	itemList := &protobuf.ItemDtoList{
 		Values: items,
 	}
-	req := NewRequest(itemList, Urls.Item)
+	req, err := NewRequest(itemList, Urls.Item)
+	if err != nil {
+		logger.Error(err, "failed to create items request")
+		return
+	}
 	sendRequest(req)
 }
 
@@ -71,7 +79,11 @@ func sendEvent(event *protobuf.EventV3Dto) {
 	eventList := &protobuf.EventV3List{
 		Values: []*protobuf.EventV3Dto{event},
 	}
-	req := NewRequest(eventList, Urls.Collect)
+	req, err := NewRequest(eventList, Urls.Collect)
+	if err != nil {
+		logger.Error(err, "failed to create event request")
+		return
+	}
 	sendRequest(req)
 }
 
@@ -79,7 +91,11 @@ func sendEvents(events []*protobuf.EventV3Dto) {
 	eventList := &protobuf.EventV3List{
 		Values: events,
 	}
-	req := NewRequest(eventList, Urls.Collect)
+	req, err := NewRequest(eventList, Urls.Collect)
+	if err != nil {
+		logger.Error(err, "failed to create events request")
+		return
+	}
 	sendRequest(req)
 }
 
@@ -94,7 +110,7 @@ func sendRequest(req Request) {
 	}
 }
 
-func NewRequest(m protoreflect.ProtoMessage, baseURL string) Request {
+func NewRequest(m protoreflect.ProtoMessage, baseURL string) (Request, error) {
 	timestamp := time.Now().UnixMilli()
 	timestampString := fmt.Sprintf("%d", timestamp)
 	url := baseURL + "?stm=" + timestampString
@@ -102,14 +118,18 @@ func NewRequest(m protoreflect.ProtoMessage, baseURL string) Request {
 	headers["Content-Type"] = "application/protobuf"
 	headers["Accept"] = "application/json"
 	headers["X-Timestamp"] = timestampString
-	body, _ := proto.Marshal(m)
+	body, err := proto.Marshal(m)
+	if err != nil {
+		logger.Error(err, "failed to marshal protobuf message")
+		return nil, err
+	}
 
 	return &request{
 		URL:       url,
 		Headers:   headers,
 		Body:      body,
 		Timestamp: timestamp,
-	}
+	}, nil
 }
 
 func (req *request) prepare() error {
