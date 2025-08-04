@@ -37,8 +37,7 @@ var (
 	RoutineCount int
 	MaxCacheSize int
 
-	bInst   Batch
-	routine chan struct{}
+	bInst Batch
 )
 
 type Batch interface {
@@ -66,7 +65,6 @@ func InitBatch() {
 		MaxCacheSize = DefaultMaxCacheSize
 	}
 
-	routine = make(chan struct{}, RoutineCount)
 	bInst = NewBatch()
 }
 
@@ -82,11 +80,11 @@ func NewBatch() Batch {
 }
 
 func run(b Batch) {
-	for {
-		routine <- struct{}{}
+	for i := 0; i < RoutineCount; i++ {
 		go func() {
-			defer func() { <-routine }()
-			b.pop()
+			for {
+				b.pop()
+			}
 		}()
 	}
 }
