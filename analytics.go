@@ -29,6 +29,89 @@ import (
 
 var initMutex sync.Mutex
 
+func validateConfig(config *Config) error {
+	if config == nil {
+		return errors.New("config cannot be nil")
+	}
+	
+	if config.SdkConfig.AccountId == "" {
+		return errors.New("AccountId is required")
+	}
+	
+	if config.SdkConfig.DataSourceId == "" {
+		return errors.New("DataSourceId is required")
+	}
+	
+	if config.HttpConfig.ServerHost == "" {
+		return errors.New("ServerHost is required")
+	}
+	
+	if config.HttpConfig.RequestTimeout < 0 {
+		return errors.New("RequestTimeout cannot be negative")
+	}
+	
+	if config.BatchConfig.Enable {
+		if config.BatchConfig.MaxSize < 0 {
+			return errors.New("BatchConfig.MaxSize cannot be negative")
+		}
+		if config.BatchConfig.FlushAfter < 0 {
+			return errors.New("BatchConfig.FlushAfter cannot be negative")
+		}
+		if config.BatchConfig.RoutineCount < 0 {
+			return errors.New("BatchConfig.RoutineCount cannot be negative")
+		}
+		if config.BatchConfig.MaxCacheSize < 0 {
+			return errors.New("BatchConfig.MaxCacheSize cannot be negative")
+		}
+	}
+	
+	return nil
+}
+
+func validateCustomEventBuilder(b *CustomEventBuilder) error {
+	if b == nil {
+		return errors.New("CustomEventBuilder cannot be nil")
+	}
+	
+	if len(b.EventName) == 0 {
+		return errors.New("EventName is required")
+	}
+	
+	if len(b.AnonymousId)+len(b.LoginUserId) == 0 {
+		return errors.New("either AnonymousId or LoginUserId is required")
+	}
+	
+	return nil
+}
+
+func validateUserEventBuilder(b *UserEventBuilder) error {
+	if b == nil {
+		return errors.New("UserEventBuilder cannot be nil")
+	}
+	
+	if len(b.LoginUserId) == 0 {
+		return errors.New("LoginUserId is required")
+	}
+	
+	return nil
+}
+
+func validateItemBuilder(b *ItemBuilder) error {
+	if b == nil {
+		return errors.New("ItemBuilder cannot be nil")
+	}
+	
+	if len(b.ItemId) == 0 {
+		return errors.New("ItemId is required")
+	}
+	
+	if len(b.ItemKey) == 0 {
+		return errors.New("ItemKey is required")
+	}
+	
+	return nil
+}
+
 func InitAnalytics(config *Config) error {
 	initMutex.Lock()
 	defer initMutex.Unlock()
@@ -43,24 +126,13 @@ func InitAnalytics(config *Config) error {
 
 	logger.SetLogLevel(int(config.SdkConfig.LogLevel))
 
-	if config.SdkConfig.AccountId == "" {
-		err := errors.New("initialization failed, AccountId is empty")
-		logger.Error(err, "Please enter your AccountId")
-		return err
-	}
-	if config.SdkConfig.DataSourceId == "" {
-		err := errors.New("initialization failed, DataSourceId is empty")
-		logger.Error(err, "Please enter your DataSourceId")
+	if err := validateConfig(config); err != nil {
+		logger.Error(err, "Config validation failed")
 		return err
 	}
 	core.AccountId = config.SdkConfig.AccountId
 	core.DataSourceId = config.SdkConfig.DataSourceId
 
-	if config.HttpConfig.ServerHost == "" {
-		err := errors.New("initialization failed, ServerHost is empty")
-		logger.Error(err, "Please enter your ServerHost")
-		return err
-	}
 	serverHost := strings.TrimSuffix(config.HttpConfig.ServerHost, "/")
 
 	core.Urls = core.RequestUrl{
@@ -104,20 +176,13 @@ func InitAnalyticsByConfigFile(file string) error {
 
 func TrackCustomEvent(b *CustomEventBuilder) error {
 	if !core.InitializedSuccessfully {
-		err := errors.New("TrackCustomEvent failed, GrowingAnalytics has not been initialized")
+		err := errors.New("GrowingAnalytics has not been initialized")
 		logger.Error(err, "Please init GrowingAnalytics first")
 		return err
 	}
 
-	if len(b.EventName) == 0 {
-		err := errors.New("TrackCustomEvent failed, EventName is empty")
-		logger.Error(err, "Please enter eventName for customEvent")
-		return err
-	}
-
-	if len(b.AnonymousId)+len(b.LoginUserId) == 0 {
-		err := errors.New("TrackCustomEvent failed, AnonymousId and LoginUserId are empty")
-		logger.Error(err, "Both AnonymousId and LoginUserId are empty. Please enter at least one of them")
+	if err := validateCustomEventBuilder(b); err != nil {
+		logger.Error(err, "CustomEventBuilder validation failed")
 		return err
 	}
 
@@ -135,14 +200,13 @@ func TrackCustomEvent(b *CustomEventBuilder) error {
 
 func TrackUser(b *UserEventBuilder) error {
 	if !core.InitializedSuccessfully {
-		err := errors.New("TrackUser failed, GrowingAnalytics has not been initialized")
+		err := errors.New("GrowingAnalytics has not been initialized")
 		logger.Error(err, "Please init GrowingAnalytics first")
 		return err
 	}
 
-	if len(b.LoginUserId) == 0 {
-		err := errors.New("TrackUser failed, LoginUserId is empty")
-		logger.Error(err, "Please enter loginUserId for user")
+	if err := validateUserEventBuilder(b); err != nil {
+		logger.Error(err, "UserEventBuilder validation failed")
 		return err
 	}
 
@@ -159,20 +223,13 @@ func TrackUser(b *UserEventBuilder) error {
 
 func SubmitItem(b *ItemBuilder) error {
 	if !core.InitializedSuccessfully {
-		err := errors.New("SubmitItem failed, GrowingAnalytics has not been initialized")
+		err := errors.New("GrowingAnalytics has not been initialized")
 		logger.Error(err, "Please init GrowingAnalytics first")
 		return err
 	}
 
-	if len(b.ItemId) == 0 {
-		err := errors.New("SubmitItem failed, ItemId is empty")
-		logger.Error(err, "Please enter itemId for item")
-		return err
-	}
-
-	if len(b.ItemKey) == 0 {
-		err := errors.New("SubmitItem failed, ItemKey is empty")
-		logger.Error(err, "Please enter itemKey for item")
+	if err := validateItemBuilder(b); err != nil {
+		logger.Error(err, "ItemBuilder validation failed")
 		return err
 	}
 
